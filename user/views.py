@@ -57,3 +57,33 @@ class AuthView(View):
         except TypeError:
             return JsonResponse({'message':'WRONG_INPUT_VALUE'}, status=400)
 
+class KakaoSignInView(View):
+    def get(self, request):
+        kakao_access_token = request.headers["Authorization"]
+        headers            = {'Authorization':f"Bearer{kakao_access_token}"}
+        URL                = "http://kapi.kakao.com/v2/user/me"
+        response           = requests.get(URL, headers = headers)
+        kakao_user_info    = response.json()
+
+        if User.objects.filter(social_id = kakao_user_info['id']).exists():
+            user                 = User.objects.get(social_id = kakao_user_info['id'])
+            payload              = {"user_id":user.id}
+            encryption_secret    = SECRET_KEY
+            algorithm            ="HS256"
+            encoded_access_token = jwt.encode(payload, encryption_secret, algorithm = algorithm)
+            
+            return JsonResponse({"access_token":encoded_access_token.decode("utf-8")}, status = 200)
+        
+        else:
+            User(
+                    social_platform_id = User.objects.get(platform = "kakao").id,
+                    social_id          = kakao_user_info['id'],
+                    ).save()
+
+            user                 = User.objects.get(social_id = kakao_user_info['id'])
+            payload              = {"user_id": user.id}
+            encryption_secret    = "HS256"
+            encoded_access_token = jwt.encode(payload, encryption_secret, algorithm = algorithm)
+            
+            return JsonResponse({'access_token':encoded_access_token.decode('utf-8')}, status = 200)
+

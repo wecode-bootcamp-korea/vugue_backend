@@ -1,12 +1,13 @@
 import json
 import bcrypt
-from datetime    import datetime
+import unittest
 
-from .models     import User
-from django.test import TestCase
-from django.test import Client
+from datetime      import datetime
+from .models       import User
+from django.test   import TestCase, Client
+from unittest.mock import patch, MagicMock
 
-class UserTest(TestCase):
+class UserTest(unittest.TestCase):
     def setUp(self):
         hashed_password = bcrypt.hashpw('12345'.encode('utf-8'),bcrypt.gensalt())
 
@@ -75,3 +76,21 @@ class UserTest(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message":"INVALID_KEYS"})
+
+
+    @patch('user.views.requests')
+    def test_kakao_login(self, mocked_requests):
+        c = Client()
+
+        class FakeResponse:
+            def json(self):
+                return{
+                        "id":"99"
+                        }
+            mocked_requests.get = MagicMock(return_value = FakeResponse())
+            header = {'HTTP_Authorization':'1234abcd'}
+            response = c.get('/user/kakao_signin', content_type ='application/json', **header)
+            self.assertEqual(response.status_code, 200)
+
+if __name__ == '__main__':
+    unittest.main()
