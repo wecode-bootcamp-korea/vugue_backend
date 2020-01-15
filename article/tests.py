@@ -5,7 +5,6 @@ from django.test       import TestCase
 from django.test       import Client
 from django.utils      import timezone
 
-from article           import mycalc
 from article.models    import *
 
 class MyCalcTest(TestCase):
@@ -103,3 +102,22 @@ class MyCalcTest(TestCase):
         response = client.get('/article/articles/1?tag_id=1&offset=hi')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message":"INVALID_VALUE"})
+
+    def test_SearchView(self):
+        client = Client()
+
+        response = client.get('/article/search?keyword=RESHAPE')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'data': [{
+                'title': 'RESHAPE THE FUTURE',
+                'image_url': 'http://img.vogue.co.kr/vogue/2019/12/style_5dfc71ea05818-600x900.jpg',
+                'detail_id': 1
+            }]
+        })
+
+    def test_SearchFail(self):
+        client = Client()
+
+        response = client.get('/article/search/')
+        self.assertEqual(response.status_code, 404)
