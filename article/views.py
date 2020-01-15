@@ -5,6 +5,7 @@ from .models      import CategoryTagArticles
 from .models      import Articles
 
 from django.db.models import Q
+from .models      import ArticleDetails
 
 class ArticleView(View):
 
@@ -27,7 +28,7 @@ class ArticleView(View):
                 data = self._article_data(articles)
                 return JsonResponse({'data':data}, status=200)
 
-            articles = CategoryTagArticles.objects.select_related('article','category').filter(category_id = category_id).order_by('id')[offset:limit]
+            articles = CategoryTagArticles.objects.select_related('article','category').filter(category_id = category_id).order_by('id')[offset*limit:(offset+1)*limit]
             data = self._article_data(articles)
 
             return JsonResponse({'data':data}, status=200)
@@ -48,3 +49,29 @@ class SearchView(View):
             return JsonResponse({'data':article_list}, status=200)
         
         return JsonResponse({'message':'NO_KEYWORD'}, status = 400)
+
+class DetailView(View):
+
+    def get(self, request, detail_id):
+        try:
+            limit = request.GET.get('limit', 120)
+            category_id = request.GET.get('category_id', 1)
+
+            detail = ArticleDetails.objects.get(id=detail_id)
+            detail_info = [{
+                'title' : detail.title,
+                'caption_date' : detail.caption_date,
+                'description' : detail.description
+            }]
+            
+            articles = CategoryTagArticles.objects.select_related('article').filter(category_id = category_id).order_by('id')[0:limit]
+            article_list = [{
+                'title' : props.article.title,
+                'caption_date' : props.article.caption_date,
+                'image_url' : props.article.image_url,
+                'caption' : props.article.caption,
+                'detail_id' : props.article.article_detail_id
+            } for props in articles]
+            return JsonResponse({'detail':detail_info, 'article_list':article_list}, status=200)
+        except ArticleDetails.DoesNotExist:
+            return JsonResponse({'message':'INVALID_ID'}, status = 404)
