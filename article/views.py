@@ -75,3 +75,18 @@ class DetailView(View):
             return JsonResponse({'detail':detail_info, 'article_list':article_list}, status=200)
         except ArticleDetails.DoesNotExist:
             return JsonResponse({'message':'INVALID_ID'}, status = 404)
+
+class MainView(View):
+    MAIN_TAG = 12
+    def get(self, request):
+        try:
+            limit = int(request.GET.get('limit', 15))
+            main_articles = CategoryTagArticles.objects.select_related('article','tag').filter(tag_id = self.MAIN_TAG).order_by('id')[0:limit]
+            article_list = [{
+                'title' : props.article.title,
+                'image_url' : props.article.image_url,
+                'detail_id' : props.article.article_detail_id
+            } for props in main_articles]
+            return JsonResponse({'data':article_list}, status=200)
+        except ValueError:
+            return JsonResponse({'message':'INVALID_VALUE'}, status = 400)
