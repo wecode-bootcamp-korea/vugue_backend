@@ -5,7 +5,7 @@ from django.test       import TestCase
 from django.test       import Client
 from django.utils      import timezone
 
-from article.models    import *
+from .models    import *
 
 class MyCalcTest(TestCase):
     def setUp(self):
@@ -114,11 +114,21 @@ class MyCalcTest(TestCase):
         ArticleDetails.objects.all().delete()
         Articles.objects.all().delete()
         CategoryTagArticles.objects.all().delete()
+    
+    def test_categoryview(self):
+        client = Client()
+        response = client.get('/article/category')
+        self.assertEqual(response.status_code, 200)
+
+    def test_tagview(self):
+        client= Client()
+        response = client.get('/article/tag')
+        self.assertEqual(response.status_code, 200)
 
     def test_ArticleView(self):
         client = Client()
 
-        response = client.get('/article/articles/1')
+        response = client.get('/article/1')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {
             'data': [{
@@ -131,7 +141,7 @@ class MyCalcTest(TestCase):
     def test_ArticleViewException(self):
         client = Client()
 
-        response = client.get('/article/articles/1?tag_id=1&offset=hi')
+        response = client.get('/article/1?tag_id=1&offset=hi')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message":"INVALID_VALUE"})
 
@@ -212,3 +222,55 @@ class MyCalcTest(TestCase):
         response = client.get('/article/main?limit=hi')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message":"INVALID_VALUE"})
+
+class VideoTest(TestCase):
+    client = Client()
+    def setUp(self):
+        category = Categories.objects.create(
+            id   = 1,    
+            name = 'Video',
+        )
+        Video.objects.create(
+            id = 1,    
+            content = "지방시의 새로운 2019 가을/겨울 컬렉션 광고 캠페인을 지금 만나보세요",
+            title = "Givenchy 2019 Fall Winter",
+            video_url = "https://player.vimeo.com/video/359012485?api=1&player_id=player1",
+            background_image = "http://img.vogue.co.kr/vogue/2019/09/style_5d722bdc058d0-400x305.jpg",
+            category = category
+        )
+
+    def tearDown(self):
+        Video.objects.get(id=1).delete()
+
+    def test_video_view(self):
+        client = Client()
+        response = client.get('/article/video')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [
+            {
+                'id': 1,
+                'title': 'Givenchy 2019 Fall Winter',
+                'background_image': 'http://img.vogue.co.kr/vogue/2019/09/style_5d722bdc058d0-400x305.jpg'
+                }
+            ]
+        )
+
+    def test_video_details(self):
+        client = Client()
+        response = client.get('/article/video/1')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'id': 1, 
+            'title': 'Givenchy 2019 Fall Winter', 
+            'background_image': 'http://img.vogue.co.kr/vogue/2019/09/style_5d722bdc058d0-400x305.jpg', 
+            'category': 'Video', 
+            'video_url': 'https://player.vimeo.com/video/359012485?api=1&player_id=player1', 
+            'content': '지방시의 새로운 2019 가을/겨울 컬렉션 광고 캠페인을 지금 만나보세요'
+            }
+        )
+
+    def test_video_exception(self):
+        client = Client()
+        response = client.get('/article/video/2')
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {'message':'ARTICLE_NOT_FOUND'})
