@@ -110,8 +110,28 @@ class MyCalcTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {
             'data': [{
-                'title': 'RESHAPE THE FUTURE',
+                'detail_id': 1,
                 'image_url': 'http://img.vogue.co.kr/vogue/2019/12/style_5dfc71ea05818-600x900.jpg',
+                'title': 'RESHAPE THE FUTURE'
+            }]
+        })
+    
+    def test_DetailView(self):
+        client = Client()
+
+        response = client.get('/article/details/1')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'detail': [{
+                'title': 'WOMAN WITH A PLAN',
+                'caption_date': '2020.01.08',
+                'description': 'good'
+            }],
+            'article_list': [{
+                'title': 'RESHAPE THE FUTURE',
+                'caption_date': '',
+                'image_url': 'http://img.vogue.co.kr/vogue/2019/12/style_5dfc71ea05818-600x900.jpg',
+                'caption': 'Plan C’의 디자이너 카롤리나 카스틸리오니',
                 'detail_id': 1
             }]
         })
@@ -121,3 +141,16 @@ class MyCalcTest(TestCase):
 
         response = client.get('/article/search/')
         self.assertEqual(response.status_code, 404)
+
+    def test_DetailViewFail(self):
+        client = Client()
+
+        response = client.get('/article/details')
+        self.assertEqual(response.status_code, 404)
+
+    def test_DetailViewException(self):
+        client = Client()
+
+        response = client.get('/article/details/100')
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"message":"INVALID_ID"})
