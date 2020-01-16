@@ -1,11 +1,26 @@
 from django.views import View
 from django.http  import JsonResponse
 
-from .models      import CategoryTagArticles
-from .models      import Articles
+from .models      import (
+    Articles,
+    ArticleDetails,
+    Categories,
+    Tags,
+    CategoryTagArticles,
+    Video
+)
 
 from django.db.models import Q
-from .models      import ArticleDetails
+
+class CategoryView(View):
+    def get(self, request):
+        categories = list(Categories.objects.values())
+        return JsonResponse({'Category':categories}, status = 200)
+
+class TagView(View):
+    def get(self,request):
+        tags = list(Tags.objects.values())
+        return JsonResponse({'Tag': tags}, status = 200)
 
 class ArticleView(View):
 
@@ -90,3 +105,31 @@ class MainView(View):
             return JsonResponse({'data':article_list}, status=200)
         except ValueError:
             return JsonResponse({'message':'INVALID_VALUE'}, status = 400)
+
+class VideoView(View):
+    def get(self, request):
+        offset = int(request.GET.get('offset',0))
+        limit  = int(request.GET.get('limit',12))
+        videos = Video.objects.select_related('category').order_by('id')[offset * limit: (offset+1) * limit]
+        data   = [{
+            'id'               : props.id,
+            'title'            : props.title,
+            'background_image' : props.background_image,
+            } for props in videos]
+        return JsonResponse(list(data), safe=False, status = 200)
+
+class VideoDetailView(View):
+    def get(self, request, video_id):
+        try:
+            video      = Video.objects.select_related('category').get(id=video_id)
+            data       = {
+                'id'               : video.id,
+                'title'            : video.title,
+                'background_image' : video.background_image,
+                'category'         : video.category.name,
+                'video_url'        : video.video_url,
+                'content'          : video.content,
+                } 
+            return JsonResponse(data, safe = False, status = 200)
+        except Video.DoesNotExist:
+            return JsonResponse({'message':'ARTICLE_NOT_FOUND'}, status =404)
