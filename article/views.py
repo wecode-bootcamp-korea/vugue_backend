@@ -2,6 +2,9 @@ from django.views import View
 from django.http  import JsonResponse
 
 from .models      import CategoryTagArticles
+from .models      import Articles
+
+from django.db.models import Q
 
 class ArticleView(View):
 
@@ -30,3 +33,18 @@ class ArticleView(View):
             return JsonResponse({'data':data}, status=200)
         except ValueError:
             return JsonResponse({'message':'INVALID_VALUE'}, status = 400)
+
+class SearchView(View):
+    def get(self, request):
+        if 'keyword' in request.GET:
+            keyword = request.GET.get('keyword')
+            articles = Articles.objects.filter(Q(title__icontains=keyword)|Q(caption__icontains=keyword))
+            article_list = [{
+                'title' : article.title,
+                'image_url' : article.image_url,
+                'detail_id' : article.article_detail_id
+            } for article in list(articles.all())]
+
+            return JsonResponse({'data':article_list}, status=200)
+        
+        return JsonResponse({'message':'NO_KEYWORD'}, status = 400)
