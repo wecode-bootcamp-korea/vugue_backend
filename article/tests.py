@@ -21,6 +21,11 @@ class MyCalcTest(TestCase):
             name = 'beauty'
         )
 
+        Categories.objects.create(
+            id =3,
+            name = 'living'
+        )
+
         Tags.objects.create(
             id =1,
             name = 'trend'
@@ -28,6 +33,11 @@ class MyCalcTest(TestCase):
         Tags.objects.create(
             id =2,
             name = 'shopping'
+        )
+
+        Tags.objects.create(
+            id =12,
+            name = 'ppl'
         )
 
         ArticleDetails.objects.create(
@@ -42,6 +52,13 @@ class MyCalcTest(TestCase):
             title = 'RESHAPE THE FUTURE',
             caption_date = '2020.01.07',
             description = 'looks good'
+        )
+
+        ArticleDetails.objects.create(
+            id =3,
+            title = 'BEAUTY NEW YEAR',
+            caption_date = '2020.01.07',
+            description = 'beautiful'
         )
 
         t1 = datetime.datetime.strptime("2020-01-01 22:24:00", "%Y-%m-%d %H:%M:%S")
@@ -64,6 +81,15 @@ class MyCalcTest(TestCase):
             article_detail = ArticleDetails.objects.get(id=2)
         )
 
+        Articles.objects.create(
+            id =3,
+            title = 'BEAUTY NEW YEAR',
+            image_url = 'http://img.vogue.co.kr/vogue/2020/01/style_5e129975d71d0.jpg',
+            caption = 'BEAUTY NEW YEAR',
+            created_date = datetime.datetime.strptime("2020-01-07 22:24:00", "%Y-%m-%d %H:%M:%S"),
+            article_detail = ArticleDetails.objects.get(id=3)
+        )
+
         CategoryTagArticles.objects.create(
             article = Articles.objects.get(id=1),
             category = Categories.objects.get(id=1),
@@ -74,6 +100,12 @@ class MyCalcTest(TestCase):
             article = Articles.objects.get(id=2),
             category = Categories.objects.get(id=2),
             tag = Tags.objects.get(id=2)
+        )
+
+        CategoryTagArticles.objects.create(
+            article = Articles.objects.get(id=3),
+            category = Categories.objects.get(id=3),
+            tag = Tags.objects.get(id=12)
         )
 
     def tearDown(self):
@@ -154,3 +186,29 @@ class MyCalcTest(TestCase):
         response = client.get('/article/details/100')
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), {"message":"INVALID_ID"})
+
+    def test_MainView(self):
+        client = Client()
+
+        response = client.get('/article/main')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'data': [{
+                'detail_id': 3,
+                'image_url': 'http://img.vogue.co.kr/vogue/2020/01/style_5e129975d71d0.jpg',
+                'title': 'BEAUTY NEW YEAR'
+            }]
+        })
+
+    def test_MainViewFail(self):
+        client = Client()
+
+        response = client.get('/article/main/1')
+        self.assertEqual(response.status_code, 404)
+
+    def test_MainViewException(self):
+        client = Client()
+
+        response = client.get('/article/main?limit=hi')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"message":"INVALID_VALUE"})
